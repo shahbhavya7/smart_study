@@ -2,9 +2,14 @@ import streamlit as st
 from utils.pdf_parser import extract_text_from_pdf
 from utils.ocr import extract_text_from_image_with_gemini
 from utils.ai_prompts import summarize_chunks_with_gemini
+from utils.quiz_renderer import render_dynamic_quiz
+from utils.quiz import generate_structured_quiz 
+from utils.concept_map import generate_concept_map
+from utils.concept_map_graph import plot_concept_map
 import google.generativeai as genai
 from PIL import Image
 import os
+import json
 from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
@@ -42,3 +47,24 @@ if uploaded_file:
                 summary = summarize_chunks_with_gemini(raw_text)
                 st.subheader("📝 Chapter Summary")
                 st.markdown(summary, unsafe_allow_html=True)
+    
+    if raw_text:
+        if st.button("🧠 Generate Interactive Quiz"):
+            with st.spinner("Generating quiz..."):
+                quiz_data = generate_structured_quiz(raw_text)
+
+                if quiz_data:
+                    st.session_state["quiz_data"] = quiz_data
+                else:
+                    st.error("❌ Failed to generate quiz.")
+
+    # 🎯 Render the quiz if already generated
+    if "quiz_data" in st.session_state:
+        render_dynamic_quiz(st.session_state["quiz_data"])
+
+    if raw_text:
+        if st.button("🧠 Generate Concept Map"):
+            concept_map = generate_concept_map(raw_text)
+            if concept_map:
+                st.json(concept_map)  # show raw JSON
+                plot_concept_map(json.dumps(concept_map))  # render graph
